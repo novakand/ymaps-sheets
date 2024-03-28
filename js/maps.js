@@ -1,8 +1,8 @@
-import { YaMapService } from './modules/maps/services/ya-map.service.js';
-import { GapiService } from './modules/sheets/services/gapi.service.js';
-import { MapState as state } from './modules/maps/constants/map-state.constant.js'
-import { MapOptions as options } from './modules/maps/constants/map-options.constant.js';
-import { MapConfig as config } from './modules/maps/constants/map-config.constant.js';
+import { YaMapService } from '../js/modules/maps/services/ya-map.service.js';
+import { GapiService } from '../js/modules/sheets/services/gapi.service.js';
+import { MapState as state } from '../js/modules/maps/constants/map-state.constant.js'
+import { MapOptions as options } from '../js/modules/maps/constants/map-options.constant.js';
+import { MapConfig as config } from '../js/modules/maps/constants/map-config.constant.js';
 
 let map;
 let mapService;
