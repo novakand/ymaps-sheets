@@ -9,7 +9,7 @@ export class YaMapService {
         this._options = options || {}
         this.loader = new YaAPILoader(this._options.config);
         this.ready = this._apiLoader(htmlElement, this._options);
-        this.geocoding = new YaGeocodingService();
+        this.geocoding = new YaGeocodingService()
     }
 
     async destroy() {
@@ -40,8 +40,6 @@ export class YaMapService {
             ...options.options, yandexMapDisablePoiInteractivity: true,
             restrictMapArea: [[-83.8, -170.8], [83.8, 170.8]],
             suppressMapOpenBlock: true,
-            autoFitToViewport: 'always',
-            maxAnimationZoomDifference: 0,
         });
     }
 

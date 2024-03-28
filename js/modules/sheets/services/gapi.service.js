@@ -1,7 +1,6 @@
 import { GapiAPILoader } from './gapi-api-loader.js';
 import { GapiAuthService } from './gapi-auth.service.js';
-import { HeaderColumns } from '../constants/header-columns.constant.js'
-
+import { SheetConfig } from '../constants/sheet-config.js';
 
 export class GapiService {
 
@@ -16,7 +15,7 @@ export class GapiService {
 
     listSheets() {
         return gapi.client.sheets.spreadsheets
-            .get({ spreadsheetId: '1c1sK-MHYcgF81omqHobdEh5Cr4t-qkGRgnl1EJN30-E' })
+            .get({ spreadsheetId: SheetConfig.spreadsheetId })
             .then((response) => response.result.sheets || [])
             .then((sheets) =>
                 sheets.map((sheet) => ({
@@ -30,7 +29,7 @@ export class GapiService {
     getRows(sheet) {
         return gapi.client.sheets.spreadsheets
             .get({
-                spreadsheetId: '1c1sK-MHYcgF81omqHobdEh5Cr4t-qkGRgnl1EJN30-E',
+                spreadsheetId: SheetConfig.spreadsheetId,
                 ranges: [sheet],
                 includeGridData: true,
             })
@@ -56,7 +55,7 @@ export class GapiService {
         const range = `${sheet}!${this.indexToSpreadsheetColumn(columnIndex)}${rowIndex + 1}`;
 
         return await gapi.client.sheets.spreadsheets.values.update({
-            spreadsheetId: '1c1sK-MHYcgF81omqHobdEh5Cr4t-qkGRgnl1EJN30-E',
+            spreadsheetId: SheetConfig.spreadsheetId,
             range,
             valueInputOption: 'RAW',
             resource: {
@@ -66,9 +65,8 @@ export class GapiService {
     }
 
     async updateCells(sheet, data) {
-        console.log(data,'updateCells')
         return await gapi.client.sheets.spreadsheets.values.batchUpdate({
-            spreadsheetId: '1c1sK-MHYcgF81omqHobdEh5Cr4t-qkGRgnl1EJN30-E',
+            spreadsheetId: SheetConfig.spreadsheetId,
             valueInputOption: "USER_ENTERED",
             data: data.map(([columnIndex, rowIndex, value]) => ({
                 range: `${sheet}!${this.indexToSpreadsheetColumn(columnIndex)}${rowIndex + 1}`,
@@ -101,9 +99,8 @@ export class GapiService {
 
             this.getRows(sheet).then((rows) => {
                 const [headerRows, ...rest] = rows;
-                headers = headerRows.map((row) =>
-                    row.value,
-                );
+                headers = headerRows
+                    .map((row) => row.value)
 
                 allRows = rest
                     .map((row, index) => this.filterRows(index + 1, row, headers))
@@ -115,44 +112,6 @@ export class GapiService {
         });
     }
 
-
-    getRowsEmptyParams(sheet) {
-        return new Promise((resolve, reject) => {
-            let allRows;
-            let headers;
-
-            this.getRows(sheet).then((rows) => {
-                const [headerRows, ...rest] = rows;
-                headers = headerRows.map((row) =>
-                    row.value,
-                );
-
-                allRows = rest
-                    .map((row, index) => this.filterRowsEmpty(index + 1, row, headers))
-                    .filter(Boolean);
-
-                resolve({ headers, allRows })
-            });
-
-        });
-    }
-
-    filterRowsEmpty(rowIndex, row, headers) {
-        const rows = (row.reduce(
-            (task, cell, headerIndex) => ({
-                ...task,
-                [headers[headerIndex]]: cell.value,
-            }),
-            { rowIndex }
-        ));
-
-        if (rows[HeaderColumns.coordinates] && rows['Торговая точка (аптека)']) {
-            return null;
-        }
-
-        return rows;
-    }
-
     filterRows(rowIndex, row, headers) {
         const rows = (row.reduce(
             (task, cell, headerIndex) => ({
@@ -161,6 +120,10 @@ export class GapiService {
             }),
             { rowIndex }
         ));
+
+        if (!rows["Торговая точка (аптека)"]) {
+            return null;
+          }
         return rows;
     }
 
@@ -169,9 +132,9 @@ export class GapiService {
             this.loader.load().then(async (gapi) => {
                 this.api = gapi;
                 this.auth = new GapiAuthService();
-                setTimeout(() => resolve(true), 2000);
+                setTimeout(() => resolve(true), 3000);
 
-            }).catch((error) => resolve(false));
+            }).catch((error) => error);
         });
     }
 
