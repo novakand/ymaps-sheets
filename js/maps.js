@@ -18,6 +18,7 @@ async function onInitMap() {
     mapService = new YaMapService('map', mapOptions);
     mapService.ready.then((yaMap) => {
         map = yaMap;
+        document.querySelector('#map').setAttribute('load')
     });
 }
 
