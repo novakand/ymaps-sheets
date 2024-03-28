@@ -11,98 +11,167 @@ let gapiService;
 async function onInit() {
     onInitMap();
     onInitGap();
-    console.log(gapiService, 'gapiService')
 }
 
-function onInitMap() {
+async function onInitMap() {
     const mapOptions = { state, options, config };
     mapService = new YaMapService('map', mapOptions);
     mapService.ready.then((yaMap) => {
-        console.log('mapready', mapService)
         map = yaMap;
     });
 }
 
-
-function getColl(data) {
+function buildPoints(data) {
     return new Promise((resolve, reject) => {
         const geoObjects = new ymaps.GeoObjectCollection();
-        data.allRows.forEach((item) => {
-            console.log(item, 'item')
-            geoObjects.add(new ymaps.GeoObject({
-                geometry: {
-                    type: "Point",
-                    coordinates: item['Координаты'].split(',').map(parseFloat)
-                },
-                properties: {
-                    ...item,
-                    balloonContentHeader: `<div>Название аптечной сети ${item['Название аптечной сети']}</div><div>Торговая точка (аптека): ${item['Торговая точка (аптека)']}</div>`,
-                    balloonContentBody: `<div><a href="${item['Ссылка на штрихкод']}" target="_blank">Ссылка на штрихкод</a></div></div> <div><a href="${item['Ссылка на логотип']}" target="_blank">Ссылка на логотип</a></div>`,
-                }
-            }));
-        });
 
-        resolve(geoObjects);
-    })
+        const isCoordinates = IsCoord(data);
+        const isEmptyCoordinates = isEmptyCoord(data);
 
-}
+        if (!!isCoordinates.length) {
+            isCoordinates?.forEach((point) => geoObjects.add(buildPoint(point)));
+            resolve(geoObjects);
+        }
 
-function onInitGap() {
-    gapiService = new GapiService();
-    gapiService.ready.then(() => {
-
-
-
-        gapiService.getRowsParams('Sheet1')
-            .then((data) => {
-                const res = [];
-                console.log(data, 'data')
-                //const geoObjects = new ymaps.GeoObjectCollection();
-
-
-
-
-                getColl(data).then((objs) => {
-
-                    console.log(objs, 'objs')
-                    map.geoObjects.add(objs);
-                });
-
-            });
-       
+        !!isEmptyCoordinates.length && geocoding(isEmptyCoordinates);
 
     });
 }
 
-async function update(d) {
+function geocoding(data) {
+
+    console.log()
+    const geo = mapService.geocoding.geocode(data, {});
+
+    geo.then(
+        (res) => {
+            map.geoObjects.add(res.geoObjects);
+            fitBounds();
+            updateRows(res.geoObjects);
+        },
+        (err) => {
+            console.log(err)
+        }
+    );
+}
 
 
-    const data = await testUpdate(d);
+async function getEmptyRows() {
 
-    console.log(data, 'data')
+    const data = await updateTableRows();
+    data?.forEach((tab) => {
+        if (tab.length === 0) return;
+        tab && gc(tab);
+    });
+}
+
+function gc(data) {
+    const geo = mapService.geocoding.geocode(data, {});
+
+    geo.then(
+        (res) => {
+            updateRows(res.geoObjects);
+        },
+        (err) => {
+            console.log(err)
+        }
+    );
+}
+
+window.getEmptyRows = getEmptyRows;
+
+async function updateTableRows() {
+    const data = await getSheets();
+    const isEmpty = data
+        .map(async (sheet) => isEmptyCoord({ ...await getRows(sheet), sheet }));
+    return await Promise.all(isEmpty);
+}
+
+
+window.updateTableRows = updateTableRows;
+
+function updateRows(data) {
+    const sheet = data.get(0).properties.get('sheet');
+    const pointsRow = buildUpdateRows(data);
 
     gapiService.updateCells(
-        'Sheet1',
-        [...data]
+        sheet,
+        [...pointsRow]
     );
+}
+
+function buildUpdateRows(data) {
+    return data.toArray()
+        .map((point) => ([6, point.properties.get('rowIndex'), point.geometry.getCoordinates().toString()]));
+}
+
+function IsCoord(data) {
+    return data?.allRows.filter(item => item['Координаты'])
+}
+
+function isEmptyCoord(data) {
+    return data?.allRows
+        .filter(item => !item['Координаты'])
+        .map((point) => ({ address: point['Торговая точка (аптека)'], properties: { ...point, sheet: data.sheet } }));
+}
+
+function fitBounds() {
+    const options = {
+        checkZoomRange: false,
+        useMapMargin: true,
+        duration: 180,
+    };
+
+    map.setBounds(map.geoObjects.getBounds(), options);
 
 }
 
-function testUpdate(data) {
-    const result = [];
-    return new Promise((resolve, reject) => {
-        data.each(async (reg) => {
+function buildPoint(point) {
+    return new ymaps.GeoObject({
+        geometry: {
+            type: "Point",
+            coordinates: point['Координаты'].split(',').map(parseFloat)
+        },
+        properties: {
+            ...point,
+            balloonContentHeader: `<div>${point['Название аптечной сети']}</div><div>Скидка: ${point['% скидки']}%</div> <div>Адрес: ${point['Торговая точка (аптека)']}</div>`,
+            balloonContentBody: `<div><a href="${point['Ссылка на штрихкод']}" target="_blank">Ссылка на штрихкод</a></div></div> <div><a href="${point['Ссылка на логотип']}" target="_blank">Ссылка на логотип</a></div>`,
+        }
+    });
+}
 
+function getSheets() {
+    return gapiService.listSheets()
+        .then((sheets) => sheets.map((sheet) => sheet.title));
+}
 
-            console.log(reg, 'OBJ')
-            if (reg.properties.get('rowIndex')) {
-                result.push([6, reg.properties.get('rowIndex'), reg.geometry.getCoordinates().toString()])
+async function buildRows() {
+    const data = await getSheets();
+    data?.forEach((sheet) => sheet && buildRow(sheet));
+}
 
-            }
+function buildRow(sheet) {
+    getRows(sheet)
+        .then((data) => {
+            buildPoints({ ...data, sheet })
+                .then((collection) => {
+                    map.geoObjects.add(collection);
+                    fitBounds();
+                });
         });
+}
 
-        resolve(result);
-    })
+function onInitGap() {
+    gapiService = new GapiService();
+    gapiService.ready.then(async () => {
+        buildRows();
+    });
+}
+
+window.buildRows = buildRows;
+
+async function getRows(sheet) {
+    return await gapiService.getRowsParams(sheet);
 }
 
 
