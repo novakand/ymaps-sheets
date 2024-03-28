@@ -5,8 +5,6 @@ import { YaGeocodingService } from './ya-geocoding.js';
 
 export class YaMapService {
 
-    ready;
-
     constructor(htmlElement, options) {
         this._options = options || {}
         this.loader = new YaAPILoader(this._options.config);
