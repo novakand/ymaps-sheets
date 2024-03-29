@@ -3,6 +3,7 @@ import { GapiService } from '../js/modules/sheets/services/gapi.service.js';
 import { MapState as state } from '../js/modules/maps/constants/map-state.constant.js'
 import { MapOptions as options } from '../js/modules/maps/constants/map-options.constant.js';
 import { MapConfig as config } from '../js/modules/maps/constants/map-config.constant.js';
+import { HeaderColumns } from '../js/modules/sheets/constants/header-columns.constant.js'
 
 let map;
 let mapService;
@@ -12,10 +13,6 @@ async function onInit() {
     onPreloader(false)
     onInitMap();
     onInitGap();
-}
-
-function getDeviceMobile() {
-    return (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
 }
 
 async function onInitMap() {
@@ -29,6 +26,13 @@ async function onInitMap() {
     });
 }
 
+function onInitGap() {
+    gapiService = new GapiService();
+    gapiService.ready.then(async () => {
+        buildRows();
+    });
+}
+
 function onPreloader(isShow) {
     const preloader = document.querySelector('.mdc-linear-progress');
     delay(3000).then(() => isShow ? preloader.style.width = '100%' : preloader.style.width = '0');
@@ -36,6 +40,10 @@ function onPreloader(isShow) {
 
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function getDeviceMobile() {
+    return (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
 }
 
 function buildPoints(data) {
@@ -57,40 +65,38 @@ function buildPoints(data) {
 
 function geocoding(data) {
 
-    console.log()
     const geo = mapService.geocoding.geocode(data, {});
 
     geo.then(
-        (res) => {
-            map.geoObjects.add(res.geoObjects);
+        (responce) => {
+            map.geoObjects.add(responce.geoObjects);
             fitBounds();
-            updateRows(res.geoObjects);
+            updateRows(responce.geoObjects);
         },
-        (err) => {
-            console.log(err)
+        (error) => {
+            console.log(error);
         }
     );
 }
 
-
 async function getEmptyRows() {
 
     const data = await updateTableRows();
-    data?.forEach((tab) => {
-        if (tab.length === 0) return;
-        tab && gc(tab);
+    data?.forEach((sheets) => {
+        if (sheets.length === 0) return;
+        sheets && updateGeocoding(sheets);
     });
 }
 
-function gc(data) {
+function updateGeocoding(data) {
     const geo = mapService.geocoding.geocode(data, {});
 
     geo.then(
-        (res) => {
-            updateRows(res.geoObjects);
+        (responce) => {
+            updateRows(responce.geoObjects);
         },
-        (err) => {
-            console.log(err)
+        (error) => {
+            console.log(error);
         }
     );
 }
@@ -123,12 +129,12 @@ function buildUpdateRows(data) {
 }
 
 function IsCoord(data) {
-    return data?.allRows.filter(item => item['Координаты'])
+    return data?.allRows.filter(item => item[HeaderColumns.coordinates])
 }
 
 function isEmptyCoord(data) {
     return data?.allRows
-        .filter(item => !item['Координаты'])
+        .filter(item => !item[HeaderColumns.coordinates])
         .map((point) => ({ address: point['Торговая точка (аптека)'], properties: { ...point, sheet: data.sheet } }));
 }
 
@@ -147,7 +153,7 @@ function buildPoint(point) {
     return new ymaps.GeoObject({
         geometry: {
             type: "Point",
-            coordinates: point['Координаты'].split(',').map(parseFloat)
+            coordinates: point[HeaderColumns.coordinates]?.split(',')?.map(parseFloat)
         },
         properties: {
             ...point,
@@ -180,12 +186,6 @@ function buildRow(sheet) {
         });
 }
 
-function onInitGap() {
-    gapiService = new GapiService();
-    gapiService.ready.then(async () => {
-        buildRows();
-    });
-}
 
 window.buildRows = buildRows;
 
