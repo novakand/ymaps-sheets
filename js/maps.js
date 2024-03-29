@@ -13,12 +13,17 @@ async function onInit() {
     onInitGap();
 }
 
+function getDeviceMobile() {
+    return (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+}
+
 async function onInitMap() {
-    const mapOptions = { state, options, config };
+    const isMobile = getDeviceMobile();
+    const mapOptions = { state, options: { ...(isMobile ? { balloonPanelMaxMapArea: Infinity, ...options } : options) }, config };
     mapService = new YaMapService('map', mapOptions);
     mapService.ready.then((yaMap) => {
         map = yaMap;
-        document.querySelector('#map').setAttribute('data-load',true);
+        document.querySelector('#map').setAttribute('data-load', true);
     });
 }
 
