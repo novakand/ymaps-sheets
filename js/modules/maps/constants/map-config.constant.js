@@ -4,6 +4,6 @@
  * @see https://yandex.ru/dev/jsapi-v2-1/doc/ru/
  */
 export const MapConfig = {
-    apikey: 'b6b65252-07e7-48d8-9e6f-90ffa58fb74a',
+    apikey: '042405c2-12f5-4b78-9580-cb5ea1d7c106',
     lang: 'ru_RU',
 }
