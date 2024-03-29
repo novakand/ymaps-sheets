@@ -13,7 +13,7 @@ export class GapiAPILoader {
             return this._scriptLoading;
         }
 
-        if (window) {
+        if (window.gapi) {
             return Promise.resolve();
         }
 
