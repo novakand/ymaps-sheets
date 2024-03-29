@@ -9,6 +9,7 @@ let mapService;
 let gapiService;
 
 async function onInit() {
+    onPreloader(false)
     onInitMap();
     onInitGap();
 }
@@ -24,6 +25,7 @@ async function onInitMap() {
     mapService.ready.then((yaMap) => {
         map = yaMap;
         document.querySelector('#map').setAttribute('data-load', true);
+        onPreloader(true);
     });
 }
 
