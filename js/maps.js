@@ -31,7 +31,11 @@ async function onInitMap() {
 
 function onPreloader(isShow) {
     const preloader = document.querySelector('.mdc-linear-progress');
-    isShow ? preloader.style.width = '100%' : preloader.style.width = '0';
+    delay(3000).then(() => isShow ? preloader.style.width = '100%' : preloader.style.width = '0');
+}
+
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function buildPoints(data) {
