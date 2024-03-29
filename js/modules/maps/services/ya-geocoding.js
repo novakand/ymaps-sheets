@@ -14,7 +14,17 @@ export class YaGeocodingService {
                 ymaps.geocode(request?.address, ymaps.util.extend({}, {}, options))
                     .then(
                         (response) => {
-                            var geoObject = response.geoObjects.get(0);
+                            let geoObject = response.geoObjects.get(0);
+
+                            if (!geoObject) {
+                                geoObject = new ymaps.GeoObject({
+                                    geometry: {
+                                        type: "Point",
+                                        coordinates: [0, 0]
+                                    },
+                                    properties: {}
+                                })
+                            }
 
                             geoObject.properties.set({
                                 ...request,
