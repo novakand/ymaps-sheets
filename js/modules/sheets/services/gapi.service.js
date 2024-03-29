@@ -75,7 +75,6 @@ export class GapiService {
         });
     }
 
-
     indexToSpreadsheetColumn(num) {
         let s = "";
         let t;
@@ -132,7 +131,7 @@ export class GapiService {
             this.loader.load().then(async (gapi) => {
                 this.api = gapi;
                 this.auth = new GapiAuthService();
-                setTimeout(() => resolve(true), 3000);
+                setTimeout(() => resolve(true), 4000);
 
             }).catch((error) => error);
         });
