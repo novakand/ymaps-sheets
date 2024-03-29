@@ -27,6 +27,11 @@ async function onInitMap() {
     });
 }
 
+function onPreloader(isShow) {
+    const preloader = document.querySelector('.mdc-linear-progress');
+    isShow ? preloader.style.width = '100%' : preloader.style.width = '0';
+}
+
 function buildPoints(data) {
     return new Promise((resolve, reject) => {
         const geoObjects = new ymaps.GeoObjectCollection();
@@ -157,12 +162,14 @@ async function buildRows() {
 }
 
 function buildRow(sheet) {
+    onPreloader(true);
     getRows(sheet)
         .then((data) => {
             buildPoints({ ...data, sheet })
                 .then((collection) => {
                     map.geoObjects.add(collection);
                     fitBounds();
+                    onPreloader(false);
                 });
         });
 }
